@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Animated Preferences</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Animated Interface with Local Storage</h1>
+        
+        <div class="theme-control">
+            <button id="theme-toggle" class="btn">Toggle Dark Mode</button>
+            <button id="reset-btn" class="btn btn-secondary">Reset Preferences</button>
+        </div>
+        
+        <div class="animation-control">
+            <button id="animation-toggle" class="btn">Start Animation</button>
+            
+            <div class="animation-speed">
+                <label for="speed-select">Animation Speed:</label>
+                <select id="speed-select">
+                    <option value="0.3s">Normal</option>
+                    <option value="0.1s">Fast</option>
+                    <option value="0.6s">Slow</option>
+                </select>
+            </div>
+            
+            <div class="animation-type">
+                <label for="animation-select">Animation Type:</label>
+                <select id="animation-select">
+                    <option value="rotate">Rotate</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="bounce">Bounce</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="image-container">
+            <div id="animated-element" class="animated-image">
+                Hello, User!
+            </div>
+        </div>
+        
+        <div id="feedback" class="feedback">
+            Preferences saved!
+        </div>
+        
+        <div class="preferences">
+            <h2>Saved Preferences</h2>
+            <div class="preference-item">
+                <strong>Theme:</strong> <span id="saved-theme">Light</span>
+            </div>
+            <div class="preference-item">
+                <strong>Animation Type:</strong> <span id="saved-animation">Rotate</span>
+            </div>
+            <div class="preference-item">
+                <strong>Animation Speed:</strong> <span id="saved-speed">Normal</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const body = document.body;
+        const themeToggle = document.getElementById('theme-toggle');
+        const resetBtn = document.getElementById('reset-btn');
+        const animationToggle = document.getElementById('animation-toggle');
+        const speedSelect = document.getElementById('speed-select');
+        const animationSelect = document.getElementById('animation-select');
+        const animatedElement = document.getElementById('animated-element');
+        const feedbackElement = document.getElementById('feedback');
+        
+        // Display elements
+        const savedTheme = document.getElementById('saved-theme');
+        const savedAnimation = document.getElementById('saved-animation');
+        const savedSpeed = document.getElementById('saved-speed');
+        
+        // Variables to track state
+        let isAnimating = false;
+        
+        // Load preferences from localStorage
+        function loadPreferences() {
+            // Check if we have saved preferences
+            if (localStorage.getItem('userPreferences')) {
+                const preferences = JSON.parse(localStorage.getItem('userPreferences'));
+                
+                // Apply theme
+                if (preferences.darkMode) {
+                    body.classList.add('dark-theme');
+                    savedTheme.textContent = 'Dark';
+                } else {
+                    body.classList.remove('dark-theme');
+                    savedTheme.textContent = 'Light';
+                }
+                
+                // Apply animation speed
+                document.documentElement.style.setProperty('--animation-speed', preferences.animationSpeed);
+                speedSelect.value = preferences.animationSpeed;
+                
+                // Show saved speed text
+                switch(preferences.animationSpeed) {
+                    case '0.1s':
+                        savedSpeed.textContent = 'Fast';
+                        break;
+                    case '0.6s':
+                        savedSpeed.textContent = 'Slow';
+                        break;
+                    default:
+                        savedSpeed.textContent = 'Normal';
+                }
+                
+                // Apply animation type
+                animationSelect.value = preferences.animationType;
+                savedAnimation.textContent = preferences.animationType.charAt(0).toUpperCase() + preferences.animationType.slice(1);
+            }
+        }
+        
+        // Save preferences to localStorage
+        function savePreferences() {
+            const preferences = {
+                darkMode: body.classList.contains('dark-theme'),
+                animationSpeed: speedSelect.value,
+                animationType: animationSelect.value
+            };
+            
+            localStorage.setItem('userPreferences', JSON.stringify(preferences));
+            
+            // Show feedback
+            showFeedback();
+        }
+        
+        // Toggle animation
+        function toggleAnimation() {
+            if (isAnimating) {
+                // Stop animation
+                animatedElement.classList.remove('rotate', 'pulse', 'bounce');
+                animationToggle.textContent = 'Start Animation';
+                isAnimating = false;
+            } else {
+                // Start animation
+                const animationType = animationSelect.value;
+                animatedElement.classList.add(animationType);
+                animationToggle.textContent = 'Stop Animation';
+                isAnimating = true;
+            }
+        }
+        
+        // Reset all preferences
+        function resetPreferences() {
+            localStorage.removeItem('userPreferences');
+            
+            // Reset to defaults
+            body.classList.remove('dark-theme');
+            document.documentElement.style.setProperty('--animation-speed', '0.3s');
+            speedSelect.value = '0.3s';
+            animationSelect.value = 'rotate';
+            
+            // Update display
+            savedTheme.textContent = 'Light';
+            savedAnimation.textContent = 'Rotate';
+            savedSpeed.textContent = 'Normal';
+            
+            // Show feedback
+            showFeedback('Preferences reset!');
+        }
+        
+        // Show feedback message
+        function showFeedback(message = 'Preferences saved!') {
+            feedbackElement.textContent = message;
+            feedbackElement.classList.add('fade-in');
+            
+            setTimeout(() => {
+                feedbackElement.classList.remove('fade-in');
+            }, 2000);
+        }
+        
+        // Event listeners
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            savedTheme.textContent = body.classList.contains('dark-theme') ? 'Dark' : 'Light';
+            savePreferences();
+        });
+        
+        animationToggle.addEventListener('click', toggleAnimation);
+        
+        speedSelect.addEventListener('change', () => {
+            const speed = speedSelect.value;
+            document.documentElement.style.setProperty('--animation-speed', speed);
+            
+            // Update saved speed text
+            switch(speed) {
+                case '0.1s':
+                    savedSpeed.textContent = 'Fast';
+                    break;
+                case '0.6s':
+                    savedSpeed.textContent = 'Slow';
+                    break;
+                default:
+                    savedSpeed.textContent = 'Normal';
+            }
+            
+            savePreferences();
+            
+            // If currently animating, restart animation to apply new speed
+            if (isAnimating) {
+                const animationType = animationSelect.value;
+                animatedElement.classList.remove('rotate', 'pulse', 'bounce');
+                setTimeout(() => {
+                    animatedElement.classList.add(animationType);
+                }, 10);
+            }
+        });
+        
+        animationSelect.addEventListener('change', () => {
+            const animationType = animationSelect.value;
+            savedAnimation.textContent = animationType.charAt(0).toUpperCase() + animationType.slice(1);
+            
+            savePreferences();
+            
+            // If currently animating, update animation type
+            if (isAnimating) {
+                animatedElement.classList.remove('rotate', 'pulse', 'bounce');
+                animatedElement.classList.add(animationType);
+            }
+        });
+        
+        resetBtn.addEventListener('click', resetPreferences);
+        
+        // Initialize
+        loadPreferences();
+    </script>
+</body>
+</html>
